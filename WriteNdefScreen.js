@@ -2,10 +2,13 @@ import React from 'react';
 import {View, StyleSheet, SafeAreaView, Platform} from 'react-native';
 import {Button, TextInput, Chip} from 'react-native-paper';
 import NfcManager, {Ndef, NfcTech} from 'react-native-nfc-manager';
+import AndroidPrompt from '../Components/AndroidPrompt';
 
 function WriteNdefScreen(props) {
+  const {navigation} = props;
   const [selectedLinkType, setSelectedLinkType] = React.useState('WEB');
   const [value, setValue] = React.useState('');
+  const androidPromptRef = React.useRef();
 
   async function writeNdef() {
     let scheme = null;
@@ -25,12 +28,18 @@ function WriteNdefScreen(props) {
     console.warn(bytes);
 
     try {
+      if(Platform.OS === 'android') {
+        androidPromptRef.current.setVisible(true);  
+      }      
       await NfcManager.requestTechnology(NfcTech.Ndef);
       await NfcManager.ndefHandler.writeNdefMessage(bytes);
     } catch (ex) {
       // bypass
     } finally {
       NfcManager.cancelTechnologyRequest();
+      if(Platform.OS === 'android') {
+        androidPromptRef.current.setVisible(false);
+      }      
     }
   }
 
@@ -59,6 +68,14 @@ function WriteNdefScreen(props) {
       <View style={[styles.bottom, styles.bgLight]}>
         <Button onPress={writeNdef}>WRITE</Button>
       </View>
+
+      <AndroidPrompt 
+          ref={androidPromptRef}
+          onCancelPress = {() => {
+            NfcManager.cancelTechnologyRequest();
+          }}
+      />
+
       <SafeAreaView style={styles.bgLight} />
     </View>
   );
